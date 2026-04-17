@@ -18,6 +18,14 @@
       "cache": false,
       "persistent": true,
       "dependsOn": ["^build"]
+    },
+    "deploy": {
+      "cache": false,
+      "dependsOn": ["build"]
+    },
+    "deploy:dry-run": {
+      "cache": false,
+      "dependsOn": ["build"]
     }
   }
 }

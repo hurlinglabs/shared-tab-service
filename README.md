@@ -14,6 +14,13 @@ const user = await client.auth.getUser();
 client.prices.on('tick', ({ symbol, price }) => update(symbol, price));
 ```
 
+### Try it live
+
+Open either in a few tabs at once to watch them share a single service instance in real time:
+
+- **React demo** (benchmark panel + throughput-over-N chart) — [shared-tab-service-vite-react-demo.ahut10.workers.dev](https://shared-tab-service-vite-react-demo.ahut10.workers.dev)
+- **Minimal vanilla-TS demo** — [shared-tab-service-vite-demo.ahut10.workers.dev](https://shared-tab-service-vite-demo.ahut10.workers.dev)
+
 ## Why you'll like it
 
 - **Typed end-to-end.** Define your service, get a strongly-typed client everywhere — methods, arguments, return values, event names, event payloads. No codegen.
@@ -34,8 +41,8 @@ client.prices.on('tick', ({ symbol, price }) => update(symbol, price));
 This is a pnpm + Turborepo monorepo.
 
 - [`packages/shared-tab-service`](./packages/shared-tab-service) — the library. **[Start here for the full docs, API, and examples.](./packages/shared-tab-service/README.md)**
-- `examples/vite-demo` — minimal vanilla-TS Vite demo.
-- `examples/vite-react-demo` — React demo with a benchmark panel and a throughput-over-N chart.
+- `examples/vite-demo` — minimal vanilla-TS Vite demo. **[Live](https://shared-tab-service-vite-demo.ahut10.workers.dev).**
+- `examples/vite-react-demo` — React demo with a benchmark panel and a throughput-over-N chart. **[Live](https://shared-tab-service-vite-react-demo.ahut10.workers.dev).**
 
 ## Scripts
 

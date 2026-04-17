@@ -14,6 +14,13 @@ const user = await client.auth.getUser();
 client.prices.on('tick', ({ symbol, price }) => update(symbol, price));
 ```
 
+### Try it live
+
+Open either in a few tabs at once to watch them share a single service instance in real time:
+
+- **React demo** (benchmark panel + throughput-over-N chart) — [shared-tab-service-vite-react-demo.ahut10.workers.dev](https://shared-tab-service-vite-react-demo.ahut10.workers.dev)
+- **Minimal vanilla-TS demo** — [shared-tab-service-vite-demo.ahut10.workers.dev](https://shared-tab-service-vite-demo.ahut10.workers.dev)
+
 ## Why you'll like it
 
 - **Typed end-to-end.** Define your service, get a strongly-typed client everywhere — methods, arguments, return values, event names, event payloads. No codegen.
@@ -242,6 +249,11 @@ client.close(): void
 ## Examples
 
 Runnable Vite demos live in the repo's `examples/` directory — a vanilla-TS demo and a React app with a benchmark panel and throughput-over-N chart.
+
+Both are deployed:
+
+- React: **[shared-tab-service-vite-react-demo.ahut10.workers.dev](https://shared-tab-service-vite-react-demo.ahut10.workers.dev)**
+- Vanilla TS: **[shared-tab-service-vite-demo.ahut10.workers.dev](https://shared-tab-service-vite-demo.ahut10.workers.dev)**
 
 ## License
 

@@ -13,6 +13,8 @@
     "format:check": "oxfmt --check",
     "checks": "run-p format:check lint \"checks:pgks --force\"",
     "checks:pgks": "turbo run typecheck test",
+    "deploy:examples": "turbo run deploy --filter=./examples/*",
+    "deploy:examples:dry-run": "turbo run deploy:dry-run --filter=./examples/*",
     "release": "changeset publish"
   },
   "devDependencies": {
@@ -20,7 +22,8 @@
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
-    "turbo": "^2.9.6"
+    "turbo": "^2.9.6",
+    "wrangler": "^4.0.0"
   },
   "packageManager": "pnpm@10.24.0"
 }
