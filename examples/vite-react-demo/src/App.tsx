@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Benchmark } from './Benchmark.js';
-import { client, currentMode, tabId } from './client.js';
+import { client, tabId } from './client.js';
+import { currentMode, selectMode } from './demo-mode.js';
 
 const BASE_TITLE = 'Shared Tab Service — React Demo';
-const MODE_CHANNEL = 'vite-react-demo-mode';
 
 interface LogEntry {
   id: number;
   time: string;
   text: string;
-}
-
-function switchMode(next: 'shared' | 'tab'): void {
-  if (next === currentMode) return;
-  location.href = `?mode=${next}`;
 }
 
 export function App() {
@@ -63,24 +58,6 @@ export function App() {
     document.title = isLeader ? `★ Leader — ${BASE_TITLE}` : BASE_TITLE;
   }, [isLeader]);
 
-  useEffect(() => {
-    const channel = new BroadcastChannel(MODE_CHANNEL);
-    const handler = (event: MessageEvent<'shared' | 'tab'>) => switchMode(event.data);
-    channel.addEventListener('message', handler);
-    return () => {
-      channel.removeEventListener('message', handler);
-      channel.close();
-    };
-  }, []);
-
-  const handleModeClick = (next: 'shared' | 'tab') => {
-    if (next === currentMode) return;
-    const channel = new BroadcastChannel(MODE_CHANNEL);
-    channel.postMessage(next);
-    channel.close();
-    switchMode(next);
-  };
-
   const leaderLabel = isLeader ? 'this tab' : currentMode === 'shared' ? 'worker' : 'another tab';
 
   return (
@@ -106,7 +83,7 @@ export function App() {
             <button
               type="button"
               className={currentMode === 'shared' ? 'active' : ''}
-              onClick={() => handleModeClick('shared')}
+              onClick={() => selectMode('shared')}
             >
               SharedWorker
             </button>
@@ -114,7 +91,7 @@ export function App() {
             <button
               type="button"
               className={currentMode === 'tab' ? 'active' : ''}
-              onClick={() => handleModeClick('tab')}
+              onClick={() => selectMode('tab')}
             >
               Tab-election
             </button>
