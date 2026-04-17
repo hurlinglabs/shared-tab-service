@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: canvas;
+  color: canvastext;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.hint {
+  margin-top: 0;
+  color: color-mix(in oklch, canvastext 60%, canvas 40%);
+  font-size: 0.9rem;
+}
+
+.info {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in oklch, canvastext 15%, canvas 85%);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.info > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.info span:first-child {
+  min-width: 4.5rem;
+  color: color-mix(in oklch, canvastext 60%, canvas 40%);
+}
+
+.mode-links {
+  margin-left: auto;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mode-links button {
+  font: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: none;
+  padding: 0.1rem 0.25rem;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 0.65;
+}
+
+.mode-links button.active {
+  font-weight: 600;
+  opacity: 1;
+}
+
+code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  background: color-mix(in oklch, canvastext 8%, canvas 92%);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.counter {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in oklch, canvastext 15%, canvas 85%);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.counter h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.counter span {
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in oklch, canvastext 40%, canvas 60%);
+  background: color-mix(in oklch, canvastext 5%, canvas 95%);
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: color-mix(in oklch, canvastext 12%, canvas 88%);
+}
+
+.log h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: color-mix(in oklch, canvastext 60%, canvas 40%);
+}
+
+.log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid color-mix(in oklch, canvastext 10%, canvas 90%);
+  border-radius: 6px;
+}
+
+.log li {
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid color-mix(in oklch, canvastext 8%, canvas 92%);
+}
+
+.log li:last-child {
+  border-bottom: none;
+}
