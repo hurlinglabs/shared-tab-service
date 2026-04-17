@@ -1,0 +1,37 @@
+{
+  "name": "@hurling/shared-tab-service",
+  "version": "0.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "check": "run-p format:check lint test typecheck",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0",
+    "@typescript/native-preview": "7.0.0-dev.20260416.2",
+    "isolate-package": "^1.31.0",
+    "npm-run-all2": "^8.0.4",
+    "oxfmt": "^0.45.0",
+    "oxlint": "^1.60.0",
+    "tsdown": "^0.21.9",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  },
+  "packageManager": "pnpm@10.24.0"
+}
