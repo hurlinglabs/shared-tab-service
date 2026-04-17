@@ -119,6 +119,74 @@ button:hover {
   background: color-mix(in oklch, canvastext 12%, canvas 88%);
 }
 
+.bench {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in oklch, canvastext 15%, canvas 85%);
+  border-radius: 8px;
+}
+
+.bench h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: color-mix(in oklch, canvastext 60%, canvas 40%);
+}
+
+.bench-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bench-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: color-mix(in oklch, canvastext 70%, canvas 30%);
+}
+
+.bench-controls input {
+  font: inherit;
+  width: 6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid color-mix(in oklch, canvastext 25%, canvas 75%);
+  border-radius: 4px;
+  background: canvas;
+  color: inherit;
+}
+
+.bench-result {
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem 1rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.bench-result > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.75rem;
+  background: color-mix(in oklch, canvastext 5%, canvas 95%);
+  border-radius: 6px;
+}
+
+.bench-result dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in oklch, canvastext 55%, canvas 45%);
+}
+
+.bench-result dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .log h3 {
   margin: 0 0 0.5rem;
   font-size: 1rem;

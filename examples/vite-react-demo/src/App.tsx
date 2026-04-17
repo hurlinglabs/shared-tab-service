@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Benchmark } from './Benchmark.js';
 import { client, currentMode, tabId } from './client.js';
 
 const BASE_TITLE = 'Shared Tab Service — React Demo';
@@ -133,6 +134,8 @@ export function App() {
           Increment
         </button>
       </section>
+
+      <Benchmark />
 
       <section className="log">
         <h3>Events</h3>
