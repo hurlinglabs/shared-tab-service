@@ -14,3 +14,12 @@ export function defineService<
 >(namespace: NS, impl: T): T & SharedTabService<Events, NS> {
   return Object.assign(impl as object, { namespace }) as T & SharedTabService<Events, NS>;
 }
+
+export function assignNamespace(service: SharedTabService, key: string): void {
+  if (service.namespace && service.namespace !== key) {
+    throw new Error(
+      `shared-tab-service: service key "${key}" does not match service.namespace "${service.namespace}"`,
+    );
+  }
+  (service as { namespace: string }).namespace = key;
+}

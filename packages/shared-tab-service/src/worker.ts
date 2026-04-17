@@ -1,5 +1,6 @@
 import { Hub } from 'tab-election/hub';
-import { assignNamespace } from './client.js';
+import { type BatchOption, resolveBatchSettings } from './batch.js';
+import { registerWithBatching } from './hub.js';
 import type { SharedTabService } from './service.js';
 
 type ServicesRecord = Record<string, SharedTabService>;
@@ -9,6 +10,8 @@ export interface RunSharedTabHubOptions {
   name?: string;
   version?: string;
   services: ServicesInput;
+  /** Default `true`. Coalesces RPC calls and events into batched messages. Pass `false` to opt out, or `{ flushMs }` to flush on a timer (default `0` = microtask). */
+  batch?: BatchOption;
 }
 
 /**
@@ -17,14 +20,12 @@ export interface RunSharedTabHubOptions {
  * be loaded by the browser when a spoke connects.
  */
 export function runSharedTabHub(options: RunSharedTabHubOptions): Hub {
-  const { name, version, services } = options;
+  const { name, version, services, batch } = options;
+  const settings = resolveBatchSettings(batch);
   return new Hub(
     async (hub) => {
       const record = typeof services === 'function' ? await services() : services;
-      for (const [namespace, service] of Object.entries(record)) {
-        assignNamespace(service, namespace);
-        hub.register(service);
-      }
+      registerWithBatching(hub, record, settings);
     },
     name,
     version,

@@ -1,11 +1,22 @@
 import { Hub, Spoke, type ServiceStub } from 'tab-election/hub';
+import {
+  BATCH_EVENT,
+  BATCH_METHOD,
+  BATCH_NAMESPACE,
+  type BatchCall,
+  type BatchOption,
+  type BatchResult,
+  type BatchSettings,
+  type BatchedEvent,
+  resolveBatchSettings,
+} from './batch.js';
+import { registerWithBatching } from './hub.js';
 import type { SharedTabService } from './service.js';
 
 type ServicesRecord = Record<string, SharedTabService>;
 type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
 
 type Resolve<S> = S extends () => Promise<infer R> ? R : S;
-
 type Client<S> = S extends ServicesRecord ? { [K in keyof S]: ServiceStub<S[K]> } : never;
 
 export interface SharedTabClient {
@@ -27,6 +38,8 @@ export interface CreateSharedTabServiceOptions<S extends ServicesInput> {
   useSharedWorker?: boolean;
   /** Default `true`. Set `false` to skip the dedicated-Worker fallback and go straight to in-tab hub when SharedWorker is unavailable. */
   useDedicatedWorker?: boolean;
+  /** Default `true`. Coalesces RPC calls and events into batched messages. Pass `false` to opt out, or `{ flushMs }` to flush on a timer (default `0` = microtask). */
+  batch?: BatchOption;
 }
 
 const isBrowserLike = (): boolean =>
@@ -36,15 +49,6 @@ const isBrowserLike = (): boolean =>
   typeof (navigator as Navigator & { locks?: unknown }).locks !== 'undefined';
 const hasSharedWorker = (): boolean => typeof SharedWorker !== 'undefined';
 const hasDedicatedWorker = (): boolean => typeof Worker !== 'undefined';
-
-export function assignNamespace(service: SharedTabService, key: string): void {
-  if (service.namespace && service.namespace !== key) {
-    throw new Error(
-      `shared-tab-service: service key "${key}" does not match service.namespace "${service.namespace}"`,
-    );
-  }
-  (service as { namespace: string }).namespace = key;
-}
 
 async function resolveServices(services: ServicesInput): Promise<ServicesRecord> {
   return typeof services === 'function' ? await services() : services;
@@ -75,6 +79,132 @@ function stubClient(reason: string): CreatedClient<ServicesInput> {
   return client as CreatedClient<ServicesInput>;
 }
 
+interface QueuedCall {
+  ns: string;
+  method: string;
+  args: unknown[];
+  resolve: (value: unknown) => void;
+  reject: (err: Error) => void;
+}
+
+type BatchStub = ServiceStub<
+  SharedTabService & { [BATCH_METHOD]: (calls: BatchCall[]) => Promise<BatchResult[]> }
+>;
+
+function buildBatchingProxy(
+  spoke: Spoke,
+  settings: BatchSettings,
+  close: () => void,
+): Record<string, unknown> {
+  const batchStub = spoke.getService(BATCH_NAMESPACE) as BatchStub;
+
+  let queue: QueuedCall[] = [];
+  let flushScheduled = false;
+
+  const flush = async (): Promise<void> => {
+    flushScheduled = false;
+    if (queue.length === 0) return;
+    const batch = queue;
+    queue = [];
+    const calls: BatchCall[] = batch.map((c) => ({ ns: c.ns, method: c.method, args: c.args }));
+    try {
+      const results = await batchStub[BATCH_METHOD](calls);
+      for (let i = 0; i < batch.length; i += 1) {
+        const r = results[i];
+        const q = batch[i];
+        if (!q) continue;
+        if (r && r.ok) q.resolve(r.value);
+        else q.reject(new Error(r && !r.ok ? r.error : 'shared-tab-service: missing batch result'));
+      }
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      for (const q of batch) q.reject(e);
+    }
+  };
+
+  const scheduleFlush = (): void => {
+    if (flushScheduled) return;
+    flushScheduled = true;
+    if (settings.flushMs <= 0) queueMicrotask(flush);
+    else setTimeout(flush, settings.flushMs);
+  };
+
+  const enqueueCall = (ns: string, method: string, args: unknown[]): Promise<unknown> =>
+    new Promise((resolve, reject) => {
+      queue.push({ ns, method, args, resolve, reject });
+      scheduleFlush();
+    });
+
+  const listeners = new Map<string, Set<(payload: unknown) => void>>();
+  (
+    batchStub as unknown as {
+      on: (event: typeof BATCH_EVENT, handler: (batch: BatchedEvent[]) => void) => () => void;
+    }
+  ).on(BATCH_EVENT, (batch) => {
+    for (const evt of batch) {
+      const set = listeners.get(`${evt.ns}:${evt.event}`);
+      if (set) for (const fn of set) fn(evt.payload);
+    }
+  });
+
+  const subscribe = (
+    ns: string,
+    event: string,
+    handler: (payload: unknown) => void,
+  ): (() => void) => {
+    const key = `${ns}:${event}`;
+    let set = listeners.get(key);
+    if (!set) {
+      set = new Set();
+      listeners.set(key, set);
+    }
+    set.add(handler);
+    return () => {
+      set?.delete(handler);
+    };
+  };
+
+  const stubCache = new Map<string, unknown>();
+  const getServiceProxy = (ns: string): unknown => {
+    const cached = stubCache.get(ns);
+    if (cached) return cached;
+    const proxy = new Proxy(Object.create(null) as Record<string, unknown>, {
+      get(_, prop) {
+        if (typeof prop !== 'string') return undefined;
+        if (prop === 'on') {
+          return (event: string, handler: (payload: unknown) => void) =>
+            subscribe(ns, event, handler);
+        }
+        return (...args: unknown[]) => enqueueCall(ns, prop, args);
+      },
+    });
+    stubCache.set(ns, proxy);
+    return proxy;
+  };
+
+  return new Proxy(Object.create(null) as Record<string, unknown>, {
+    get(_, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (prop === 'close') return close;
+      if (prop === 'isLeader') return spoke.isLeader;
+      if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
+      return getServiceProxy(prop);
+    },
+  }) as Record<string, unknown>;
+}
+
+function buildDirectProxy(spoke: Spoke, close: () => void): Record<string, unknown> {
+  return new Proxy(Object.create(null) as Record<string, unknown>, {
+    get(_, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (prop === 'close') return close;
+      if (prop === 'isLeader') return spoke.isLeader;
+      if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
+      return spoke.getService(prop);
+    },
+  }) as Record<string, unknown>;
+}
+
 export function createSharedTabService<const S extends ServicesInput>(
   options: CreateSharedTabServiceOptions<S>,
 ): CreatedClient<S> {
@@ -85,7 +215,10 @@ export function createSharedTabService<const S extends ServicesInput>(
     workerUrl,
     useSharedWorker = true,
     useDedicatedWorker = true,
+    batch,
   } = options;
+
+  const batchSettings = resolveBatchSettings(batch);
 
   if (!isBrowserLike()) {
     return stubClient(
@@ -116,10 +249,7 @@ export function createSharedTabService<const S extends ServicesInput>(
     inTabHub = new Hub(
       async (hub) => {
         const record = await resolveServices(services);
-        for (const [namespace, service] of Object.entries(record)) {
-          assignNamespace(service, namespace);
-          hub.register(service);
-        }
+        registerWithBatching(hub, record, batchSettings);
       },
       name,
       version,
@@ -131,20 +261,14 @@ export function createSharedTabService<const S extends ServicesInput>(
     });
   }
 
-  const client = new Proxy(Object.create(null) as Record<string, unknown>, {
-    get: (_, prop) => {
-      if (typeof prop !== 'string') return undefined;
-      if (prop === 'close') {
-        return () => {
-          spoke.close();
-          inTabHub?.close();
-        };
-      }
-      if (prop === 'isLeader') return spoke.isLeader;
-      if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
-      return spoke.getService(prop);
-    },
-  });
+  const close = (): void => {
+    spoke.close();
+    inTabHub?.close();
+  };
+
+  const client = batchSettings.enabled
+    ? buildBatchingProxy(spoke, batchSettings, close)
+    : buildDirectProxy(spoke, close);
 
   return client as unknown as CreatedClient<S>;
 }
