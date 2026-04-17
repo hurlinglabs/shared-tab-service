@@ -1,5 +1,13 @@
 # @hurling/vite-react-demo
 
+## 0.0.2
+
+### Patch Changes
+
+- update documentation
+- Updated dependencies
+  - @hurling/shared-tab-service@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes
