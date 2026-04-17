@@ -11,7 +11,8 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "check": "run-p format:check lint test typecheck",
+    "checks": "run-p format:check lint \"checks:pgks --force\"",
+    "checks:pgks": "turbo run typecheck test",
     "release": "changeset publish"
   },
   "devDependencies": {

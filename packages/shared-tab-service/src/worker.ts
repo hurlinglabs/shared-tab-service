@@ -1,10 +1,7 @@
 import { Hub } from 'tab-election/hub';
 import { type BatchOption, resolveBatchSettings } from './batch.js';
+import type { ServicesInput } from './client.js';
 import { registerWithBatching } from './hub.js';
-import type { SharedTabService } from './service.js';
-
-type ServicesRecord = Record<string, SharedTabService>;
-type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
 
 export interface RunSharedTabHubOptions {
   name?: string;

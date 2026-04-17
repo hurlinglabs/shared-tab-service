@@ -9,6 +9,7 @@ import {
   type BatchedEvent,
 } from './batch.js';
 import { assignNamespace, type SharedTabService } from './service.js';
+import type { ServicesRecord } from './client.js';
 
 /**
  * Register a map of services on the hub. When batching is enabled, wraps each service's
@@ -18,7 +19,7 @@ import { assignNamespace, type SharedTabService } from './service.js';
  */
 export function registerWithBatching(
   teHub: Hub,
-  services: Record<string, SharedTabService>,
+  services: ServicesRecord,
   settings: BatchSettings,
 ): void {
   const serviceMap = new Map<string, SharedTabService>();

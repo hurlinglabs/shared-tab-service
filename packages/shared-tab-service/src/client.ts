@@ -13,8 +13,8 @@ import {
 import { registerWithBatching } from './hub.js';
 import type { SharedTabService } from './service.js';
 
-type ServicesRecord = Record<string, SharedTabService>;
-type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
+export type ServicesRecord = { [K in string]: SharedTabService<K> };
+export type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
 
 type Resolve<S> = S extends () => Promise<infer R> ? R : S;
 type Client<S> = S extends ServicesRecord ? { [K in keyof S]: ServiceStub<S[K]> } : never;

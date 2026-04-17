@@ -4,7 +4,7 @@ export interface CounterEvents extends Record<string, unknown> {
   changed: { value: number; byTab: string };
 }
 
-export class CounterService implements SharedTabService<CounterEvents, 'counter'> {
+export class CounterService implements SharedTabService<'counter', CounterEvents> {
   readonly namespace = 'counter' as const;
   readonly __events?: CounterEvents;
   private hub?: Hub;
