@@ -46,10 +46,10 @@ export function Benchmark() {
           <input
             type="number"
             min={1}
-            max={100000}
+            max={10000}
             step={100}
             value={n}
-            onChange={(e) => setN(Math.max(1, Number(e.target.value) || 0))}
+            onChange={(e) => setN(Math.min(10000, Math.max(1, Number(e.target.value) || 0)))}
             disabled={running !== null}
           />
         </label>
