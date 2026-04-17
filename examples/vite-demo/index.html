@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Tab Service Demo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Shared Tab Service Demo</h1>
+        <p class="hint">Open this page in multiple tabs — counter and events are shared.</p>
+      </header>
+
+      <section class="info">
+        <div><span>Tab ID</span><code id="tab-id">…</code></div>
+        <div>
+          <span>Mode</span>
+          <code id="mode">…</code>
+          <span class="mode-links">
+            <a href="?mode=shared">SharedWorker</a> · <a href="?mode=tab">Tab-election</a>
+          </span>
+        </div>
+        <div><span>Leader</span><code id="leader">…</code></div>
+      </section>
+
+      <section class="counter">
+        <h2>Counter: <span id="count">0</span></h2>
+        <button id="increment">Increment</button>
+      </section>
+
+      <section class="log">
+        <h3>Events</h3>
+        <ul id="events"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

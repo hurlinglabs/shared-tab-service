@@ -6,4 +6,4 @@ export {
   type SharedTabClient,
 } from './client.js';
 export { runSharedTabHub, type RunSharedTabHubOptions } from './worker.js';
-export type { ServiceStub } from 'tab-election/hub';
+export type { Hub, ServiceStub } from 'tab-election/hub';
