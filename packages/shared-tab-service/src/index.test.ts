@@ -30,7 +30,7 @@ describe('createSharedTabService (no browser runtime)', () => {
     });
     const client = createSharedTabService({
       name: 'test',
-      services: [db],
+      services: { db },
     });
     expect(client.isLeader).toBe(false);
     await expect((client.db as unknown as { ping(): Promise<string> }).ping()).rejects.toThrow(

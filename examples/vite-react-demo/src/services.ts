@@ -25,6 +25,8 @@ export class CounterService implements SharedTabService<CounterEvents, 'counter'
   }
 }
 
-export function createServices(): [CounterService] {
-  return [new CounterService()];
+export function createServices() {
+  return {
+    counter: new CounterService(),
+  };
 }

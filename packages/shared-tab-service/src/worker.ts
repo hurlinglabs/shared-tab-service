@@ -1,19 +1,14 @@
 import { Hub } from 'tab-election/hub';
+import { assignNamespace } from './client.js';
 import type { SharedTabService } from './service.js';
 
-type ServicesShape = readonly SharedTabService[] | Record<string, SharedTabService>;
-type ServicesInput = ServicesShape | (() => Promise<ServicesShape>);
+type ServicesRecord = Record<string, SharedTabService>;
+type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
 
 export interface RunSharedTabHubOptions {
   name?: string;
   version?: string;
   services: ServicesInput;
-}
-
-function toList(shape: ServicesShape): SharedTabService[] {
-  return Array.isArray(shape)
-    ? [...shape]
-    : Object.values(shape as Record<string, SharedTabService>);
 }
 
 /**
@@ -25,8 +20,11 @@ export function runSharedTabHub(options: RunSharedTabHubOptions): Hub {
   const { name, version, services } = options;
   return new Hub(
     async (hub) => {
-      const shape = typeof services === 'function' ? await services() : services;
-      for (const service of toList(shape)) hub.register(service);
+      const record = typeof services === 'function' ? await services() : services;
+      for (const [namespace, service] of Object.entries(record)) {
+        assignNamespace(service, namespace);
+        hub.register(service);
+      }
     },
     name,
     version,

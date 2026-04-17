@@ -1,23 +1,12 @@
 import { Hub, Spoke, type ServiceStub } from 'tab-election/hub';
 import type { SharedTabService } from './service.js';
 
-type ServicesShape = readonly SharedTabService[] | Record<string, SharedTabService>;
-type ServicesInput = ServicesShape | (() => Promise<ServicesShape>);
+type ServicesRecord = Record<string, SharedTabService>;
+type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
 
 type Resolve<S> = S extends () => Promise<infer R> ? R : S;
 
-type ClientFromArray<Arr extends readonly SharedTabService[]> = {
-  [S in Arr[number] as S['namespace']]: ServiceStub<S>;
-};
-type ClientFromRecord<R extends Record<string, SharedTabService>> = {
-  [S in R[keyof R] as S['namespace']]: ServiceStub<S>;
-};
-
-type Client<S> = S extends readonly SharedTabService[]
-  ? ClientFromArray<S>
-  : S extends Record<string, SharedTabService>
-    ? ClientFromRecord<S>
-    : never;
+type Client<S> = S extends ServicesRecord ? { [K in keyof S]: ServiceStub<S[K]> } : never;
 
 export interface SharedTabClient {
   readonly isLeader: boolean;
@@ -30,6 +19,7 @@ export type CreatedClient<S extends ServicesInput> = Client<Resolve<S>> & Shared
 export interface CreateSharedTabServiceOptions<S extends ServicesInput> {
   name: string;
   version?: string;
+  /** Record of services keyed by their namespace. The key is authoritative — it's used both as the client property name and as the runtime namespace. */
   services: S;
   /** URL of a worker entry that calls `runSharedTabHub`. When set and supported, the service runs in a SharedWorker (or dedicated Worker) instead of the elected tab. */
   workerUrl?: string | URL;
@@ -47,15 +37,17 @@ const isBrowserLike = (): boolean =>
 const hasSharedWorker = (): boolean => typeof SharedWorker !== 'undefined';
 const hasDedicatedWorker = (): boolean => typeof Worker !== 'undefined';
 
-function toList(shape: ServicesShape): SharedTabService[] {
-  return Array.isArray(shape)
-    ? [...shape]
-    : Object.values(shape as Record<string, SharedTabService>);
+export function assignNamespace(service: SharedTabService, key: string): void {
+  if (service.namespace && service.namespace !== key) {
+    throw new Error(
+      `shared-tab-service: service key "${key}" does not match service.namespace "${service.namespace}"`,
+    );
+  }
+  (service as { namespace: string }).namespace = key;
 }
 
-async function resolveServices(services: ServicesInput): Promise<SharedTabService[]> {
-  const shape = typeof services === 'function' ? await services() : services;
-  return toList(shape);
+async function resolveServices(services: ServicesInput): Promise<ServicesRecord> {
+  return typeof services === 'function' ? await services() : services;
 }
 
 function stubClient(reason: string): CreatedClient<ServicesInput> {
@@ -123,8 +115,11 @@ export function createSharedTabService<const S extends ServicesInput>(
   } else {
     inTabHub = new Hub(
       async (hub) => {
-        const list = await resolveServices(services);
-        for (const service of list) hub.register(service);
+        const record = await resolveServices(services);
+        for (const [namespace, service] of Object.entries(record)) {
+          assignNamespace(service, namespace);
+          hub.register(service);
+        }
       },
       name,
       version,
@@ -147,7 +142,7 @@ export function createSharedTabService<const S extends ServicesInput>(
       }
       if (prop === 'isLeader') return spoke.isLeader;
       if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
-      return spoke.getService(prop as string);
+      return spoke.getService(prop);
     },
   });
 
