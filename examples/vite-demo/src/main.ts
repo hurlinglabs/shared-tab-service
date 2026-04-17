@@ -25,9 +25,36 @@ $('mode').textContent = wantShared
   ? 'SharedWorker (falls back to tab-election)'
   : 'Tab-election (forced)';
 
+document
+  .querySelector(`.mode-links a[data-mode="${wantShared ? 'shared' : 'tab'}"]`)
+  ?.classList.add('active');
+
+const modeChannel = new BroadcastChannel('vite-demo-mode');
+const currentMode = wantShared ? 'shared' : 'tab';
+
+const switchMode = (next: 'shared' | 'tab'): void => {
+  if (next === currentMode) return;
+  location.href = `?mode=${next}`;
+};
+
+modeChannel.addEventListener('message', (event: MessageEvent<'shared' | 'tab'>) => {
+  switchMode(event.data);
+});
+
+document.querySelectorAll<HTMLAnchorElement>('.mode-links a').forEach((a) => {
+  a.addEventListener('click', (event) => {
+    event.preventDefault();
+    const next = a.dataset['mode'] as 'shared' | 'tab';
+    modeChannel.postMessage(next);
+    switchMode(next);
+  });
+});
+
+const baseTitle = document.title;
 const leaderEl = $('leader');
 const renderLeader = (isLeader: boolean): void => {
   leaderEl.textContent = isLeader ? 'this tab' : wantShared ? 'worker' : 'another tab';
+  document.title = isLeader ? `★ Leader — ${baseTitle}` : baseTitle;
 };
 renderLeader(client.isLeader);
 client.onLeaderChange(renderLeader);

@@ -63,6 +63,11 @@ header h1 {
   color: inherit;
 }
 
+.mode-links a.active {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 code {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   background: color-mix(in oklch, canvastext 8%, canvas 92%);
