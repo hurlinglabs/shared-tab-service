@@ -11,7 +11,9 @@
     "target": "ES2022",
     "moduleResolution": "bundler",
     "skipDefaultLibCheck": true,
+    "lib": ["ESNext", "DOM"],
     "types": [],
+    "noEmit": true,
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
