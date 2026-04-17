@@ -48,6 +48,13 @@ export function Benchmark() {
   return (
     <section className="bench">
       <h3>Load test</h3>
+      <p className="hint">
+        <strong>Parallel</strong> fires all N calls in the same tick — the library's transparent
+        batching coalesces them into a single RPC round trip, so you see the true throughput
+        ceiling. <strong>Sequential</strong> awaits each call's reply before sending the next, so
+        every call pays a full round-trip latency — useful for measuring benchmark where full round
+        trip/sequencial workloads.
+      </p>
       <div className="bench-controls">
         <label>
           N
