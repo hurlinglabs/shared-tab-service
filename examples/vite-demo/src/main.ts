@@ -1,4 +1,5 @@
 import { createSharedTabService } from '@hurling/shared-tab-service';
+import sharedWorkerUrl from './shared.worker.ts?worker&url';
 import { createServices } from './services.js';
 
 const params = new URLSearchParams(location.search);
@@ -6,7 +7,7 @@ const wantShared = params.get('mode') !== 'tab';
 
 const tabId = crypto.randomUUID().slice(0, 8);
 
-const workerUrl = wantShared ? new URL('./shared.worker.ts', import.meta.url) : undefined;
+const workerUrl = wantShared ? sharedWorkerUrl : undefined;
 
 const client = createSharedTabService({
   name: 'vite-demo',

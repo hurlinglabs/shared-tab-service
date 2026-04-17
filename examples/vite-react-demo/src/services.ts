@@ -9,6 +9,8 @@ export class CounterService implements SharedTabService<'counter', CounterEvents
   readonly __events?: CounterEvents;
   private hub?: Hub;
   private count = 0;
+  private emitTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastByTab = '';
 
   init(hub: Hub): void {
     this.hub = hub;
@@ -16,12 +18,24 @@ export class CounterService implements SharedTabService<'counter', CounterEvents
 
   async increment(byTab: string): Promise<number> {
     this.count += 1;
-    this.hub?.emit(this.namespace, 'changed', { value: this.count, byTab });
+    this.lastByTab = byTab;
+    this.scheduleEmit();
     return this.count;
   }
 
   async get(): Promise<number> {
     return this.count;
+  }
+
+  private scheduleEmit(): void {
+    if (this.emitTimer !== null) clearTimeout(this.emitTimer);
+    this.emitTimer = setTimeout(() => {
+      this.emitTimer = null;
+      this.hub?.emit(this.namespace, 'changed', {
+        value: this.count,
+        byTab: this.lastByTab,
+      });
+    }, 0);
   }
 }
 
