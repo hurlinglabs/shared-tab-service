@@ -1,20 +1,39 @@
 # @hurling/shared-tab-service
 
-Run one shared service across every tab of your browser app. Fully typed RPC, automatic transport selection (SharedWorker → Tab-election leader → no-op for SSR/Node), and transparent message batching.
+**One service. Every tab. Zero duplication.**
 
-Built on top of [`tab-election`](https://www.npmjs.com/package/tab-election) but wraps it in a single-file DX: define your service once, get a typed client everywhere, let the library pick the best transport the browser offers.
+Stop opening N WebSockets, N auth sessions, and N polling loops just because your user opened N tabs. `@hurling/shared-tab-service` lets you define a service **once** and share a single live instance across every tab of your app — with fully typed RPC, typed events, and automatic transport selection under the hood.
 
-## When to use
+```ts
+const client = createSharedTabService({ name: 'my-app', services, workerUrl });
 
-- One tab should hold a shared WebSocket / EventSource / Server-Sent-Events connection, and every other tab reads from it.
-- Your app opens an expensive IndexedDB or auth session that you'd like to dedupe across tabs.
-- You're fanning out polling / subscriptions and don't want N tabs all hitting the server.
+// Every tab calls this. Only the leader actually runs it.
+const user = await client.auth.getUser();
+
+// Every tab sees this event. Emitted once.
+client.prices.on('tick', ({ symbol, price }) => update(symbol, price));
+```
+
+## Why you'll like it
+
+- **Typed end-to-end.** Define your service, get a strongly-typed client everywhere — methods, arguments, return values, event names, event payloads. No codegen.
+- **Best transport, picked for you.** `SharedWorker` when the browser supports it, a tab-elected leader over `BroadcastChannel` when it doesn't, an SSR-safe stub in Node. No branching in your app code.
+- **Transparent batching.** Calls made in the same microtask are coalesced into a single message. Events emitted during a batched call are fanned out in one broadcast. Your code never knows.
+- **Tiny surface area.** One function to host the hub, one function to get a client, one helper to declare a service. That's the whole library.
+- **Credit where it's due.** Leader election and cross-tab messaging build on the excellent [`tab-election`](https://www.npmjs.com/package/tab-election) library. This package extends that foundation with automatic detection of what your browser supports, so work is offloaded via the most efficient mechanism available.
+
+## When to use it
+
+- One tab should hold a shared **WebSocket / EventSource / SSE** connection, and every other tab reads from it.
+- Your app opens an expensive **IndexedDB** handle or **auth session** that you'd like to dedupe across tabs.
+- You're fanning out **polling / subscriptions** and don't want N tabs all hitting the server.
+- Any state or side-effect you'd rather run **once per browser**, not once per tab.
 
 ## Install
 
 ```bash
 pnpm add @hurling/shared-tab-service
-# or npm / yarn
+# or npm install / yarn add
 ```
 
 The library is browser-first. Imports resolve safely in Node (SSR, tests) but calls will reject with a clear error unless a browser runtime is detected.
@@ -220,6 +239,10 @@ client.close(): void
 - **Services are singletons per transport**. There is one instance per elected leader (tab-election) or one per SharedWorker.
 - **Namespace keys must be unique** across the `services` record — they're the addressable identifier.
 
-## Development
+## Examples
 
-See the `examples/` directory at the repo root for runnable Vite demos (vanilla TS and React).
+Runnable Vite demos live in the repo's `examples/` directory — a vanilla-TS demo and a React app with a benchmark panel and throughput-over-N chart.
+
+## License
+
+[Apache-2.0](./LICENSE).

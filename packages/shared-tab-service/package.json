@@ -1,9 +1,22 @@
 {
   "name": "@hurling/shared-tab-service",
   "version": "0.0.0",
-  "description": "",
-  "keywords": [],
-  "license": "ISC",
+  "description": "One service, every tab, zero duplication. Typed RPC and events shared across browser tabs with automatic transport selection (SharedWorker → tab-elected leader → SSR-safe stub).",
+  "keywords": [
+    "shared-worker",
+    "sharedworker",
+    "tab-election",
+    "cross-tab",
+    "multi-tab",
+    "broadcast-channel",
+    "rpc",
+    "typed-rpc",
+    "websocket",
+    "leader-election",
+    "typescript",
+    "browser"
+  ],
+  "license": "Apache-2.0",
   "author": "",
   "files": [
     "dist"
