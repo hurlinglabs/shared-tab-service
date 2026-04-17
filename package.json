@@ -33,5 +33,8 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.4"
   },
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.24.0",
+  "dependencies": {
+    "tab-election": "4.3.2"
+  }
 }

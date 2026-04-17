@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      tab-election:
+        specifier: 4.3.2
+        version: 4.3.2
     devDependencies:
       '@changesets/cli':
         specifier: ^2.30.0
@@ -2095,6 +2099,9 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  tab-election@4.3.2:
+    resolution: {integrity: sha512-WNoaNqw2JbIlYueO9Y677sAk7KGV53sO0KgvU0zaXZK9G290QwzLWRLSkLB9u3hlAPckjeG0puWo++mpWpeAbQ==}
 
   tar-fs@3.1.2:
     resolution: {integrity: sha512-QGxxTxxyleAdyM3kpFs14ymbYmNFrfY+pHj7Z8FgtbZ7w2//VAgLMac7sT6nRpIHjppXO2AwwEOg0bPFVRcmXw==}
@@ -4424,6 +4431,8 @@ snapshots:
   strip-final-newline@2.0.0: {}
 
   strip-json-comments@5.0.3: {}
+
+  tab-election@4.3.2: {}
 
   tar-fs@3.1.2:
     dependencies:
