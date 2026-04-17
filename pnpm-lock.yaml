@@ -7,20 +7,10 @@ settings:
 importers:
 
   .:
-    dependencies:
-      tab-election:
-        specifier: 4.3.2
-        version: 4.3.2
     devDependencies:
       '@changesets/cli':
         specifier: ^2.30.0
         version: 2.30.0
-      '@typescript/native-preview':
-        specifier: 7.0.0-dev.20260416.2
-        version: 7.0.0-dev.20260416.2
-      isolate-package:
-        specifier: ^1.31.0
-        version: 1.31.0
       npm-run-all2:
         specifier: ^8.0.4
         version: 8.0.4
@@ -30,6 +20,19 @@ importers:
       oxlint:
         specifier: ^1.60.0
         version: 1.60.0
+
+  packages/shared-tab-service:
+    dependencies:
+      tab-election:
+        specifier: 4.3.2
+        version: 4.3.2
+    devDependencies:
+      '@typescript/native-preview':
+        specifier: 7.0.0-dev.20260416.2
+        version: 7.0.0-dev.20260416.2
+      isolate-package:
+        specifier: ^1.31.0
+        version: 1.31.0
       tsdown:
         specifier: ^0.21.9
         version: 0.21.9(@typescript/native-preview@7.0.0-dev.20260416.2)(typescript@6.0.3)

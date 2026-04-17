@@ -1,56 +1,24 @@
 {
-  "name": "@hurling/shared-tab-service",
+  "name": "shared-tab-service-monorepo",
   "version": "0.0.0",
-  "description": "",
-  "keywords": [],
-  "license": "ISC",
-  "author": "",
-  "files": [
-    "dist"
-  ],
+  "private": true,
   "type": "module",
-  "sideEffects": false,
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    },
-    "./worker": {
-      "types": "./dist/worker.d.mts",
-      "import": "./dist/worker.mjs"
-    }
-  },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "typecheck": "tsgo --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "build": "pnpm -r --filter \"./packages/*\" run build",
+    "dev": "pnpm -r --parallel run dev",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "check": "run-p format:check lint test typecheck",
     "release": "changeset publish"
   },
-  "dependencies": {
-    "tab-election": "4.3.2"
-  },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "@typescript/native-preview": "7.0.0-dev.20260416.2",
-    "isolate-package": "^1.31.0",
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.45.0",
-    "oxlint": "^1.60.0",
-    "tsdown": "^0.21.9",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.4"
+    "oxlint": "^1.60.0"
   },
   "packageManager": "pnpm@10.24.0"
 }
