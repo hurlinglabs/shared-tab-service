@@ -1,5 +1,7 @@
 # @hurling/shared-tab-service
 
+![SharedWorker preview](https://raw.githubusercontent.com/hurlinglabs/shared-tab-service/main/packages/shared-tab-service/docs/sharedWorker%20preview.gif)
+
 **One service. Every tab. Zero duplication.**
 
 Stop opening N WebSockets, N auth sessions, and N polling loops just because your user opened N tabs. `@hurling/shared-tab-service` lets you define a service **once** and share a single live instance across every tab of your app — with fully typed RPC, typed events, and automatic transport selection under the hood.
