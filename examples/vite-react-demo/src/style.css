@@ -187,6 +187,66 @@ button:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.bench-clear {
+  margin-left: auto;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.bench-chart-wrap {
+  margin: 1rem 0 0;
+}
+
+.bench-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: color-mix(in oklch, canvastext 3%, canvas 97%);
+  border-radius: 6px;
+}
+
+.bench-chart-grid {
+  stroke: color-mix(in oklch, canvastext 10%, canvas 90%);
+  stroke-width: 1;
+}
+
+.bench-chart-axis {
+  stroke: color-mix(in oklch, canvastext 30%, canvas 70%);
+  stroke-width: 1;
+}
+
+.bench-chart-tick {
+  fill: color-mix(in oklch, canvastext 55%, canvas 45%);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+}
+
+.bench-chart-label {
+  fill: color-mix(in oklch, canvastext 65%, canvas 35%);
+  font-size: 11px;
+}
+
+.bench-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, canvastext 70%, canvas 30%);
+}
+
+.bench-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bench-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
 .log h3 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
