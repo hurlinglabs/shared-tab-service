@@ -12,7 +12,6 @@ export class CounterService implements SharedTabService<CounterEvents, 'counter'
 
   init(hub: Hub): void {
     this.hub = hub;
-    
   }
 
   async increment(byTab: string): Promise<number> {

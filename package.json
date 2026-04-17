@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm -r --filter \"./packages/*\" run build",
-    "dev": "pnpm -r --parallel run dev",
-    "test": "pnpm -r run test",
-    "typecheck": "pnpm -r run typecheck",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -18,7 +18,8 @@
     "@changesets/cli": "^2.30.0",
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.45.0",
-    "oxlint": "^1.60.0"
+    "oxlint": "^1.60.0",
+    "turbo": "^2.9.6"
   },
   "packageManager": "pnpm@10.24.0"
 }
