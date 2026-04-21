@@ -1,5 +1,11 @@
 # @hurling/shared-tab-service
 
+## 0.0.3
+
+### Patch Changes
+
+- add repo details to package.json
+
 ## 0.0.2
 
 ### Patch Changes
