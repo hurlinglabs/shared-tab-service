@@ -18,6 +18,11 @@
   ],
   "license": "Apache-2.0",
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hurlinglabs/shared-tab-service.git",
+    "directory": "packages/shared-tab-service"
+  },
   "files": [
     "dist"
   ],
