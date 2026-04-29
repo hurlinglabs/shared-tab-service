@@ -9,7 +9,7 @@ import {
 
 /**
  * End-to-end tests for the heartbeat + subscriber-tracking layer described in
- * docs/proposals/spoke-heartbeat-and-subscriber-tracking.md.
+ * docs/spec/20260429-spoke-heartbeat-and-subscriber-tracking.md.
  *
  * The aggregate counts and the `Service.onSubscribersChanged` hook are what
  * services use to lazily start and stop upstream work (e.g. open a WebSocket

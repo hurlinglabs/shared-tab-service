@@ -79,7 +79,7 @@ was registered at call #17.
 - **Survival across leader change.** If the leader dies mid-call the
   deferred eventually times out. State recovery is the caller's
   responsibility — see the [proposal on spoke heartbeat and subscriber
-  tracking](./proposals/spoke-heartbeat-and-subscriber-tracking.md) for
+  tracking](./spec/20260429-spoke-heartbeat-and-subscriber-tracking.md) for
   ongoing work in this area.
 
 ## Batching: same correlation, one envelope
