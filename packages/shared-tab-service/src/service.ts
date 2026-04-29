@@ -3,7 +3,7 @@ import type { SubscriberCounts } from './lifecycle.js';
 
 export interface SharedTabService<
   Namespace extends string = string,
-  Events extends Record<string, unknown> = Record<never, never>,
+  Events extends object = {},
 > extends TabElectionService<Events> {
   readonly namespace: Namespace;
   /**
@@ -22,7 +22,7 @@ export interface SharedTabService<
 export function defineService<
   const NS extends string,
   T extends object,
-  Events extends Record<string, unknown> = Record<never, never>,
+  Events extends object = {},
 >(namespace: NS, impl: T): T & SharedTabService<NS, Events> {
   return Object.assign(impl, { namespace }) as T & SharedTabService<NS, Events>;
 }

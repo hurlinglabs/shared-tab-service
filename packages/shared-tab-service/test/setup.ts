@@ -18,9 +18,11 @@ if (typeof (globalThis as { self?: unknown }).self === 'undefined') {
 // hot paths — both must exist as constructors for the in-tab path to work.
 const g = globalThis as Record<string, unknown>;
 if (typeof g.SharedWorker === 'undefined') {
+  // oxlint-disable-next-line typescript/no-extraneous-class
   g.SharedWorker = class {} as unknown as typeof SharedWorker;
 }
 if (typeof g.Worker === 'undefined') {
+  // oxlint-disable-next-line typescript/no-extraneous-class
   g.Worker = class {} as unknown as typeof Worker;
 }
 

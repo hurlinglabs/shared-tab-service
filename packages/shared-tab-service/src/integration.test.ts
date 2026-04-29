@@ -50,7 +50,7 @@ afterEach(() => {
   openClients = [];
 });
 
-interface CounterEvents extends Record<string, unknown> {
+interface CounterEvents {
   changed: { value: number };
   reset: { at: number };
 }

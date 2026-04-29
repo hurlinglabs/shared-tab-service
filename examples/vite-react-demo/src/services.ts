@@ -1,6 +1,6 @@
 import type { Hub, SharedTabService } from '@hurling/shared-tab-service';
 
-export interface CounterEvents extends Record<string, unknown> {
+export interface CounterEvents {
   changed: { value: number; byTab: string };
 }
 

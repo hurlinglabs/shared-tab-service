@@ -45,7 +45,7 @@ afterEach(() => {
   openClients = [];
 });
 
-interface TickerEvents extends Record<string, unknown> {
+interface TickerEvents {
   tick: { n: number };
   other: { ok: boolean };
 }

@@ -45,7 +45,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && isolate",
     "dev": "tsdown --watch",
     "typecheck": "tsgo --noEmit",
     "test": "vitest run",

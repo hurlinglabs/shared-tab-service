@@ -15,7 +15,7 @@ across all connected spokes:
 ```ts
 import { defineService, type SharedTabService } from '@hurling/shared-tab-service';
 
-interface BetsEvents extends Record<string, unknown> {
+interface BetsEvents {
   'bets-changed': { bets: Bet[] };
 }
 

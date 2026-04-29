@@ -57,7 +57,7 @@ The idiomatic setup is three small files: your **services**, a **worker entry**,
 // src/services.ts
 import type { Hub, SharedTabService } from '@hurling/shared-tab-service';
 
-export interface CounterEvents extends Record<string, unknown> {
+export interface CounterEvents {
   changed: { value: number };
 }
 
