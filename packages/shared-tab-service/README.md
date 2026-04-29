@@ -241,6 +241,13 @@ client.close(): void
 
 `isLeader` is always `false` in SharedWorker mode (the worker is the "leader").
 
+## How replies stay paired with callers
+
+Every RPC carries a `(spokeId, callNumber)` correlation pair so concurrent
+calls on the same `BroadcastChannel` never cross wires — see
+[docs/correlation-ids.md](../../docs/correlation-ids.md) for the full
+walk-through.
+
 ## Caveats
 
 - **State lives in the leader's memory**. When a tab-election leader closes, a new tab is elected and services are re-initialized (counters restart from 0, subscriptions re-established, etc.). If you need state to survive leader flips, persist it (IndexedDB / localStorage) and rehydrate in `init`.

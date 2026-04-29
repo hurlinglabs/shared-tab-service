@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSharedTabService, defineService } from './index.js';
 
 describe('defineService', () => {
@@ -22,14 +22,21 @@ describe('defineService', () => {
 });
 
 describe('createSharedTabService (no browser runtime)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('returns a stub client whose service calls reject', async () => {
+    // Force the stub path even when the test polyfills are present.
+    vi.stubGlobal('self', undefined);
+
     const db = defineService('db', {
       async ping() {
         return 'pong';
       },
     });
     const client = createSharedTabService({
-      name: 'test',
+      name: 'test-stub',
       services: { db },
     });
     expect(client.isLeader).toBe(false);

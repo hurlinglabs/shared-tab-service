@@ -254,6 +254,15 @@ export function createSharedTabService<const S extends ServicesInput>(
       name,
       version,
     );
+    // Spoke unconditionally calls hub.setOptions({name, version}) which tears
+    // down and re-runs leader election. With the values we just passed to the
+    // Hub constructor, that re-election is redundant and races with the
+    // in-flight one — patch it out when nothing actually changed.
+    const originalSetOptions = inTabHub.setOptions.bind(inTabHub);
+    inTabHub.setOptions = (opts) => {
+      if (inTabHub!.name === opts.name && inTabHub!.version === opts.version) return;
+      originalSetOptions(opts);
+    };
     spoke = new Spoke({
       workerUrl: inTabHub,
       name,
