@@ -1,5 +1,11 @@
 # @hurling/shared-tab-service
 
+## 0.1.0
+
+### Minor Changes
+
+- heartbeat-support allowing services to detect when no subscribers so could lazy open/close WS and logic, plus many more unit tests
+
 ## 0.0.3
 
 ### Patch Changes

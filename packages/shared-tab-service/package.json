@@ -1,6 +1,6 @@
 {
   "name": "@hurling/shared-tab-service",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "One service, every tab, zero duplication. Typed RPC and events shared across browser tabs with automatic transport selection (SharedWorker → tab-elected leader → SSR-safe stub).",
   "keywords": [
     "broadcast-channel",

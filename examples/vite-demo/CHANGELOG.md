@@ -1,5 +1,12 @@
 # @hurling/vite-demo
 
+## 0.1.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @hurling/shared-tab-service@0.1.0
+
 ## 0.0.3
 
 ### Patch Changes
