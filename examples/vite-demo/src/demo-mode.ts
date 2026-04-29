@@ -4,10 +4,7 @@
 
 export type Mode = 'shared' | 'tab';
 
-type ModeMessage =
-  | { t: 'query' }
-  | { t: 'announce'; mode: Mode }
-  | { t: 'force'; mode: Mode };
+type ModeMessage = { t: 'query' } | { t: 'announce'; mode: Mode } | { t: 'force'; mode: Mode };
 
 const CHANNEL_NAME = 'vite-demo-mode';
 const DISCOVERY_TIMEOUT = 150;
@@ -16,8 +13,7 @@ const DEFAULT_MODE: Mode = 'shared';
 const channel = new BroadcastChannel(CHANNEL_NAME);
 
 const paramMode = new URLSearchParams(location.search).get('mode');
-const explicitMode: Mode | null =
-  paramMode === 'shared' || paramMode === 'tab' ? paramMode : null;
+const explicitMode: Mode | null = paramMode === 'shared' || paramMode === 'tab' ? paramMode : null;
 
 function discover(): Promise<Mode | null> {
   return new Promise((resolve) => {

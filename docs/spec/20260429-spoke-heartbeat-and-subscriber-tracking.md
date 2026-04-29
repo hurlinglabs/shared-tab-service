@@ -2,7 +2,7 @@
 
 ## Motivation
 
-Today the hub knows when *it* is alive (leader election + heartbeat), but has
+Today the hub knows when _it_ is alive (leader election + heartbeat), but has
 no native mechanism to know:
 
 1. How many spokes (tabs) are currently connected.
@@ -84,10 +84,10 @@ Counts live at two different levels of the hierarchy:
 Within the service-event level, two derived counts are worth exposing
 because they answer different questions:
 
-| Count | Question it answers | Use case |
-| --- | --- | --- |
-| **Subscriber tabs** (dedup per spoke) | "Is *anyone* listening?" | Gating upstream work — start/stop a WS, a poll, a stream |
-| **Total listeners** (per-callback) | "How many things are wired up?" | Debugging, telemetry, leak detection |
+| Count                                 | Question it answers             | Use case                                                 |
+| ------------------------------------- | ------------------------------- | -------------------------------------------------------- |
+| **Subscriber tabs** (dedup per spoke) | "Is _anyone_ listening?"        | Gating upstream work — start/stop a WS, a poll, a stream |
+| **Total listeners** (per-callback)    | "How many things are wired up?" | Debugging, telemetry, leak detection                     |
 
 Today `ServiceStub.on(event, listener)` is a local EventEmitter add on the
 spoke side with no dedup — three components in the same tab calling
@@ -100,8 +100,8 @@ fall out of what the spoke already knows.
 to the hub when the value changes. The hub aggregates per-spoke entries to
 derive both counts:
 
-- *Subscriber tab count* = number of spokes with `count > 0` for this event
-- *Total listener count* = sum of `count` across all spokes for this event
+- _Subscriber tab count_ = number of spokes with `count > 0` for this event
+- _Total listener count_ = sum of `count` across all spokes for this event
 
 We ship the actual count (not just zero/non-zero transitions) so total
 listener telemetry works without an extra channel. The wire cost is
@@ -167,6 +167,7 @@ silently die) is up to the consumer, not the library.
    There is no built-in auto-reconnect. The app decides whether to spin up
    a fresh `Spoke`, reload, or do nothing. Most apps will probably want to
    re-create the client; the library shouldn't presume.
+
 4. If a spoke that's been expired tries to send anything (RPC, heartbeat)
    afterwards the hub treats it as an unknown spoke. The spoke can use
    that as an additional signal that it has been disconnected, but the
@@ -196,7 +197,7 @@ interface Service<Events> {
   onSubscribersChanged?(
     counts: { tabs: number; listeners: number },
     eventName: keyof Events & string,
-  ): void
+  ): void;
 }
 ```
 
@@ -205,11 +206,11 @@ for any of its events. The intended gating signal is `counts.tabs`;
 `counts.listeners` is provided for services that need finer granularity. The "only run while listening" pattern becomes:
 
 ```ts
-class MyService implements SharedTabService<"my", MyEvents> {
+class MyService implements SharedTabService<'my', MyEvents> {
   onSubscribersChanged(count: number, eventName: string) {
-    if (eventName !== "updates") return
-    if (count > 0) this.startStream()
-    else this.stopStream()
+    if (eventName !== 'updates') return;
+    if (count > 0) this.startStream();
+    else this.stopStream();
   }
 }
 ```
@@ -220,7 +221,7 @@ called `service.on("updates", ...)` is the signal.
 ### 4. Manual escape hatch
 
 For work that isn't 1:1 with a single event subscription (the bets-table
-case actually *is* 1:1, but not all are), keep an explicit API:
+case actually _is_ 1:1, but not all are), keep an explicit API:
 
 ```ts
 serviceStub.acquire(): UnsubscribeFunction // returns the release fn

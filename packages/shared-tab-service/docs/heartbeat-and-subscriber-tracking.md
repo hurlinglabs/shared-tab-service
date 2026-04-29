@@ -54,10 +54,10 @@ via `client.bets.on('bets-changed', …)` is the signal — no `acquire` /
 
 ## What `spokes` and `listeners` mean
 
-| Count       | What it counts                                                                              | Use it for                                                            |
-| ----------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `spokes`    | Distinct connected client instances (each `createSharedTabService(…)`) with `count > 0`     | Gating upstream work (open/close a WebSocket, start/stop a poll loop) |
-| `listeners` | Total number of `.on(event, …)` callbacks across all spokes                                 | Telemetry, leak detection, debugging                                  |
+| Count       | What it counts                                                                          | Use it for                                                            |
+| ----------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `spokes`    | Distinct connected client instances (each `createSharedTabService(…)`) with `count > 0` | Gating upstream work (open/close a WebSocket, start/stop a poll loop) |
+| `listeners` | Total number of `.on(event, …)` callbacks across all spokes                             | Telemetry, leak detection, debugging                                  |
 
 `spokes` is the right gating signal because in-spoke listener churn (a
 React component swapping handlers on a re-render) shouldn't tear down a
@@ -85,10 +85,10 @@ createSharedTabService({
 });
 ```
 
-| Option       | Default | Meaning                                                                         |
-| ------------ | ------- | ------------------------------------------------------------------------------- |
-| `intervalMs` | 5000    | How often the spoke sends a heartbeat to the hub.                               |
-| `ttlMs`      | 15000   | How long the hub waits without a heartbeat before declaring a spoke crashed.    |
+| Option       | Default | Meaning                                                                      |
+| ------------ | ------- | ---------------------------------------------------------------------------- |
+| `intervalMs` | 5000    | How often the spoke sends a heartbeat to the hub.                            |
+| `ttlMs`      | 15000   | How long the hub waits without a heartbeat before declaring a spoke crashed. |
 
 Defaults give roughly three missed beats before expiry. Tune `ttlMs` shorter
 for snappier cleanup at the cost of more false positives on slow spokes.
@@ -97,20 +97,20 @@ for snappier cleanup at the cost of more false positives on slow spokes.
 
 ### Spoke side (`SpokeLifecycle`)
 
-* On client construction:
-  * Generates a `spokeId` (UUID via `crypto.randomUUID()`, falls back to a
+- On client construction:
+  - Generates a `spokeId` (UUID via `crypto.randomUUID()`, falls back to a
     Math.random-based id in environments without it).
-  * Sends a `hello` RPC with `{ spokeId, version }` to the hub.
-  * Schedules `hb` RPCs every `intervalMs`.
-* On `client.<svc>.on(event, fn)`:
-  * Increments a local `(ns, event)` counter.
-  * Sends `sub({ spokeId, ns, event, count })` to the hub. The new total
+  - Sends a `hello` RPC with `{ spokeId, version }` to the hub.
+  - Schedules `hb` RPCs every `intervalMs`.
+- On `client.<svc>.on(event, fn)`:
+  - Increments a local `(ns, event)` counter.
+  - Sends `sub({ spokeId, ns, event, count })` to the hub. The new total
     count is sent (not just deltas), so the hub state is self-correcting.
-* On unsubscribe: decrements and sends `sub` with the new count (zero if no
+- On unsubscribe: decrements and sends `sub` with the new count (zero if no
   more local listeners).
-* On `client.close()`:
-  * Sends `bye({ spokeId })`.
-  * In the in-tab leader case, also calls `manager.bye(spokeId)`
+- On `client.close()`:
+  - Sends `bye({ spokeId })`.
+  - In the in-tab leader case, also calls `manager.bye(spokeId)`
     synchronously so close is immediately observable. (RPC bye still fires;
     the manager is idempotent.)
 
@@ -127,13 +127,13 @@ spokes:      Map<spokeId, { id, version, connectedAt, lastSeen, subs: Map<ns, Ma
 aggregate:   Map<ns, Map<event, { spokes, listeners }>>
 ```
 
-* `hello/hb` updates `lastSeen`.
-* `sub` updates the spoke's per-event count and recomputes the affected
+- `hello/hb` updates `lastSeen`.
+- `sub` updates the spoke's per-event count and recomputes the affected
   aggregate. If the aggregate value actually changed, the service's
   `onSubscribersChanged({spokes, listeners}, eventName)` is called.
-* `bye` removes the spoke and recomputes every `(ns, event)` it
+- `bye` removes the spoke and recomputes every `(ns, event)` it
   contributed to.
-* A sweep timer (period = `max(50ms, intervalMs / 2)`) calls `bye` for any
+- A sweep timer (period = `max(50ms, intervalMs / 2)`) calls `bye` for any
   spoke whose `lastSeen` is older than `ttlMs`. Crash safety falls out of
   this — a hard tab kill produces the same observable behaviour as a
   graceful close, just delayed by up to one TTL window.
@@ -178,19 +178,19 @@ const { spokeId } = (client as any).__lifecycle as SpokeLifecycle;
 
 ## Trade-offs and limits
 
-* **Leader transitions reset state.** The aggregate counts live on the
+- **Leader transitions reset state.** The aggregate counts live on the
   current leader. If leadership transfers (the leader tab closes,
   recovery fires), the new leader starts with empty state. Spokes do not
   re-send their subscription state on leader change, so any active
   subscriptions go silent until the next listener add/remove. Cross-leader
   state replication is intentionally out of scope (see proposal §non-goals).
-* **Best-effort delivery.** Heartbeats and lifecycle RPCs use the same
+- **Best-effort delivery.** Heartbeats and lifecycle RPCs use the same
   transport as everything else; messages can be dropped if the channel is
   closed mid-flight. The TTL sweep is the safety net.
-* **In-tab fallback chattiness.** Each tab is also potentially the hub, so
+- **In-tab fallback chattiness.** Each tab is also potentially the hub, so
   every tab runs both halves. The interval is configurable; raise it if you
   see overhead.
-* **No backwards-compat shim yet.** A spoke that does not send heartbeats
+- **No backwards-compat shim yet.** A spoke that does not send heartbeats
   (e.g. an older client version connecting to a newer hub) will still
   appear connected forever from the hub's view — `lastSeen` is set on
   `hello` but never updated. We will close this gap before this becomes a
@@ -198,15 +198,15 @@ const { spokeId } = (client as any).__lifecycle as SpokeLifecycle;
 
 ## Files
 
-* `src/lifecycle.ts` — `LifecycleManager`, `SpokeLifecycle`, the lifecycle
+- `src/lifecycle.ts` — `LifecycleManager`, `SpokeLifecycle`, the lifecycle
   service factory and the heartbeat-option resolver.
-* `src/hub.ts` — registers the lifecycle service when `heartbeat !== null`,
+- `src/hub.ts` — registers the lifecycle service when `heartbeat !== null`,
   passes the user services map to the manager so it can fire
   `onSubscribersChanged`, stops the sweep timer on `hub.close()`.
-* `src/client.ts` — instantiates `SpokeLifecycle`, hooks subscribe /
+- `src/client.ts` — instantiates `SpokeLifecycle`, hooks subscribe /
   unsubscribe in both the batching and direct (`batch: false`) proxies,
   exposes `__lifecycle` on the client.
-* `src/lifecycle.test.ts` — unit tests for `LifecycleManager` and
+- `src/lifecycle.test.ts` — unit tests for `LifecycleManager` and
   end-to-end tests over the real Hub + Spoke transport (heartbeat,
   hook firing, multi-client aggregation, crash safety, clean close,
   `heartbeat: false` opt-out, batched + non-batched paths).

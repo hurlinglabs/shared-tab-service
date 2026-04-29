@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Hub } from 'tab-election/hub';
 import { createSharedTabService, type SharedTabService } from './index.js';
-import {
-  LifecycleManager,
-  type ConnectedSpoke,
-  type SubscriberCounts,
-} from './lifecycle.js';
+import { LifecycleManager, type ConnectedSpoke, type SubscriberCounts } from './lifecycle.js';
 
 /**
  * End-to-end tests for the heartbeat + subscriber-tracking layer described in
@@ -174,14 +170,20 @@ describe('LifecycleManager (unit)', () => {
     const m = new LifecycleManager({ intervalMs: 50, ttlMs: 100 }, svcMap, () => now);
     m.hello('crashed');
     m.sub('crashed', 'ticker', 'tick', 1);
-    expect(calls.changes.at(-1)).toEqual({ counts: { spokes: 1, listeners: 1 }, eventName: 'tick' });
+    expect(calls.changes.at(-1)).toEqual({
+      counts: { spokes: 1, listeners: 1 },
+      eventName: 'tick',
+    });
 
     // Time advances past TTL with no heartbeat — sweep evicts s1.
     now = 200;
     m.sweep();
     expect(m.getConnectedSpokeCount()).toBe(0);
     expect(m.getSubscriberSpokeCount('ticker', 'tick')).toBe(0);
-    expect(calls.changes.at(-1)).toEqual({ counts: { spokes: 0, listeners: 0 }, eventName: 'tick' });
+    expect(calls.changes.at(-1)).toEqual({
+      counts: { spokes: 0, listeners: 0 },
+      eventName: 'tick',
+    });
   });
 
   it('only fires onSubscribersChanged when aggregate actually changes', () => {

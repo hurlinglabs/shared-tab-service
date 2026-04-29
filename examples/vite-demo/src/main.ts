@@ -23,9 +23,7 @@ const leaderEl = $('leader');
 
 $('tab-id').textContent = tabId;
 $('mode').textContent =
-  currentMode === 'shared'
-    ? 'SharedWorker (falls back to tab-election)'
-    : 'Tab-election (forced)';
+  currentMode === 'shared' ? 'SharedWorker (falls back to tab-election)' : 'Tab-election (forced)';
 
 const baseTitle = document.title;
 const renderLeader = (isLeader: boolean): void => {

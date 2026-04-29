@@ -243,10 +243,7 @@ function buildDirectProxy(
     const wrapped = new Proxy(inner, {
       get(target, prop) {
         if (prop === 'on') {
-          return (
-            event: string,
-            handler: (payload: unknown) => void,
-          ): (() => void) => {
+          return (event: string, handler: (payload: unknown) => void): (() => void) => {
             const off = (
               target as unknown as {
                 on(e: string, h: (p: unknown) => void): () => void;

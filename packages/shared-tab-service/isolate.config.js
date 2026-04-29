@@ -1,6 +1,6 @@
-import { defineConfig } from "isolate-package";
+import { defineConfig } from 'isolate-package';
 
 export default defineConfig({
-  workspaceRoot: "../..",
-  buildDirName: "dist",
+  workspaceRoot: '../..',
+  buildDirName: 'dist',
 });

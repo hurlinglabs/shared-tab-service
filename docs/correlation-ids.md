@@ -18,10 +18,10 @@ that makes concurrent calls safe to await.
 
 Every call carries two pieces of routing data:
 
-| Field        | Where it lives                | What it identifies                      |
-| ------------ | ----------------------------- | --------------------------------------- |
-| `spokeId`    | `Tab._id` — set in the `Tab` constructor | The tab that originated the call         |
-| `callNumber` | `Tab._callCount`, incremented per call    | The specific call within that tab        |
+| Field        | Where it lives                           | What it identifies                |
+| ------------ | ---------------------------------------- | --------------------------------- |
+| `spokeId`    | `Tab._id` — set in the `Tab` constructor | The tab that originated the call  |
+| `callNumber` | `Tab._callCount`, incremented per call   | The specific call within that tab |
 
 `spokeId` is a 16-character random alphanumeric string generated once when the
 spoke's `Tab` is constructed. It survives for the life of the tab. Two tabs
@@ -68,7 +68,7 @@ was registered at call #17.
   reply never arrives the deferred is rejected with `Call timed out` and
   removed from the map.
 
-## What this does *not* try to handle
+## What this does _not_ try to handle
 
 - **Cross-process correlation between unrelated apps.** `spokeId` is only
   unique within a single `BroadcastChannel`. Different `name` values use
