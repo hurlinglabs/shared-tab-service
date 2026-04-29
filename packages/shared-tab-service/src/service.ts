@@ -1,10 +1,22 @@
 import type { Service as TabElectionService } from 'tab-election/hub';
+import type { SubscriberCounts } from './lifecycle.js';
 
 export interface SharedTabService<
   Namespace extends string = string,
   Events extends Record<string, unknown> = Record<never, never>,
 > extends TabElectionService<Events> {
   readonly namespace: Namespace;
+  /**
+   * Optional hub-side hook fired whenever the aggregate listener counts for
+   * any of this service's events change. Use this to gate work on
+   * `counts.spokes` — e.g. open a WebSocket on the first subscriber, close it
+   * when the last subscriber goes away. `counts.listeners` is provided for
+   * services that need finer granularity.
+   *
+   * The hook is invoked from the lifecycle manager running inside the hub
+   * (the leader tab or SharedWorker). It is not called on followers.
+   */
+  onSubscribersChanged?(counts: SubscriberCounts, eventName: keyof Events & string): void;
 }
 
 export function defineService<

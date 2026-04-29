@@ -8,6 +8,12 @@ import {
   type BatchSettings,
   type BatchedEvent,
 } from './batch.js';
+import {
+  LifecycleManager,
+  attachManagerToHub,
+  createLifecycleService,
+  type HeartbeatSettings,
+} from './lifecycle.js';
 import { assignNamespace, type SharedTabService } from './service.js';
 import type { ServicesRecord } from './client.js';
 
@@ -16,11 +22,16 @@ import type { ServicesRecord } from './client.js';
  * init callback so it sees a hub whose `emit` coalesces into a single `__sts_batch:events`
  * broadcast, and registers a `__sts_batch:dispatch` meta-service that fans out batched
  * RPC calls to the correct service instance.
+ *
+ * When `heartbeat` is non-null, also registers an internal `__sts_lifecycle` service
+ * that tracks per-spoke heartbeats and listener counts. The resulting LifecycleManager
+ * is attached to the hub as `(hub as any).__lifecycle`.
  */
 export function registerWithBatching(
   teHub: Hub,
   services: ServicesRecord,
   settings: BatchSettings,
+  heartbeat: HeartbeatSettings | null = null,
 ): void {
   const serviceMap = new Map<string, SharedTabService>();
 
@@ -67,6 +78,20 @@ export function registerWithBatching(
       }
     }
     teHub.register(service);
+  }
+
+  if (heartbeat) {
+    const manager = new LifecycleManager(heartbeat, serviceMap);
+    manager.start();
+    attachManagerToHub(teHub, manager);
+    teHub.register(createLifecycleService(manager));
+
+    // Stop the sweep timer when the hub is closed.
+    const originalClose = teHub.close.bind(teHub);
+    teHub.close = (): void => {
+      manager.stop();
+      originalClose();
+    };
   }
 
   if (!settings.enabled) return;

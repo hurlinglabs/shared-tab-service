@@ -11,6 +11,13 @@ import {
   resolveBatchSettings,
 } from './batch.js';
 import { registerWithBatching } from './hub.js';
+import {
+  LIFECYCLE_NAMESPACE,
+  SpokeLifecycle,
+  resolveHeartbeatSettings,
+  type HeartbeatOption,
+  type HeartbeatSettings,
+} from './lifecycle.js';
 import type { SharedTabService } from './service.js';
 
 export type ServicesRecord = { [K in string]: SharedTabService<K> };
@@ -40,6 +47,8 @@ export interface CreateSharedTabServiceOptions<S extends ServicesInput> {
   useDedicatedWorker?: boolean;
   /** Default `true`. Coalesces RPC calls and events into batched messages. Pass `false` to opt out, or `{ flushMs }` to flush on a timer (default `0` = microtask). */
   batch?: BatchOption;
+  /** Default `true`. Spoke heartbeat + listener-count tracking. Pass `false` to disable. */
+  heartbeat?: HeartbeatOption;
 }
 
 const isBrowserLike = (): boolean =>
@@ -91,9 +100,30 @@ type BatchStub = ServiceStub<
   SharedTabService & { [BATCH_METHOD]: (calls: BatchCall[]) => Promise<BatchResult[]> }
 >;
 
+type LifecycleStub = {
+  hello(args: { spokeId: string; version?: string }): Promise<void>;
+  hb(args: { spokeId: string }): Promise<void>;
+  sub(args: { spokeId: string; ns: string; event: string; count: number }): Promise<void>;
+  bye(args: { spokeId: string }): Promise<void>;
+};
+
+/** Build a fire-and-forget dispatcher that goes straight through the tab-election RPC,
+ *  bypassing user-level batching so lifecycle traffic can't be starved by it. */
+function makeLifecycleDispatch(spoke: Spoke): (method: string, args: unknown) => void {
+  const stub = spoke.getService(LIFECYCLE_NAMESPACE) as unknown as LifecycleStub;
+  return (method, args) => {
+    const fn = (stub as unknown as Record<string, (a: unknown) => Promise<void>>)[method];
+    if (typeof fn !== 'function') return;
+    fn.call(stub, args).catch(() => {
+      /* fire-and-forget */
+    });
+  };
+}
+
 function buildBatchingProxy(
   spoke: Spoke,
   settings: BatchSettings,
+  lifecycle: SpokeLifecycle | undefined,
   close: () => void,
 ): Record<string, unknown> {
   const batchStub = spoke.getService(BATCH_NAMESPACE) as BatchStub;
@@ -159,8 +189,10 @@ function buildBatchingProxy(
       listeners.set(key, set);
     }
     set.add(handler);
+    const release = lifecycle?.trackSubscribe(ns, event);
     return () => {
       set?.delete(handler);
+      release?.();
     };
   };
 
@@ -188,19 +220,63 @@ function buildBatchingProxy(
       if (prop === 'close') return close;
       if (prop === 'isLeader') return spoke.isLeader;
       if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
+      if (prop === '__lifecycle') return lifecycle;
       return getServiceProxy(prop);
     },
   }) as Record<string, unknown>;
 }
 
-function buildDirectProxy(spoke: Spoke, close: () => void): Record<string, unknown> {
+function buildDirectProxy(
+  spoke: Spoke,
+  lifecycle: SpokeLifecycle | undefined,
+  close: () => void,
+): Record<string, unknown> {
+  const stubCache = new Map<string, unknown>();
+  const getServiceProxy = (ns: string): unknown => {
+    const cached = stubCache.get(ns);
+    if (cached) return cached;
+    const inner = spoke.getService(ns) as unknown as Record<string, unknown>;
+    if (!lifecycle) {
+      stubCache.set(ns, inner);
+      return inner;
+    }
+    const wrapped = new Proxy(inner, {
+      get(target, prop) {
+        if (prop === 'on') {
+          return (
+            event: string,
+            handler: (payload: unknown) => void,
+          ): (() => void) => {
+            const off = (
+              target as unknown as {
+                on(e: string, h: (p: unknown) => void): () => void;
+              }
+            ).on(event, handler);
+            const release = lifecycle.trackSubscribe(ns, event);
+            return () => {
+              try {
+                off();
+              } finally {
+                release();
+              }
+            };
+          };
+        }
+        const v = Reflect.get(target, prop);
+        return typeof v === 'function' ? v.bind(target) : v;
+      },
+    });
+    stubCache.set(ns, wrapped);
+    return wrapped;
+  };
   return new Proxy(Object.create(null) as Record<string, unknown>, {
     get(_, prop) {
       if (typeof prop !== 'string') return undefined;
       if (prop === 'close') return close;
       if (prop === 'isLeader') return spoke.isLeader;
       if (prop === 'onLeaderChange') return spoke.onLeaderChange.bind(spoke);
-      return spoke.getService(prop);
+      if (prop === '__lifecycle') return lifecycle;
+      return getServiceProxy(prop);
     },
   }) as Record<string, unknown>;
 }
@@ -216,9 +292,11 @@ export function createSharedTabService<const S extends ServicesInput>(
     useSharedWorker = true,
     useDedicatedWorker = true,
     batch,
+    heartbeat,
   } = options;
 
   const batchSettings = resolveBatchSettings(batch);
+  const heartbeatSettings: HeartbeatSettings | null = resolveHeartbeatSettings(heartbeat);
 
   if (!isBrowserLike()) {
     return stubClient(
@@ -249,7 +327,7 @@ export function createSharedTabService<const S extends ServicesInput>(
     inTabHub = new Hub(
       async (hub) => {
         const record = await resolveServices(services);
-        registerWithBatching(hub, record, batchSettings);
+        registerWithBatching(hub, record, batchSettings, heartbeatSettings);
       },
       name,
       version,
@@ -270,14 +348,39 @@ export function createSharedTabService<const S extends ServicesInput>(
     });
   }
 
+  let lifecycle: SpokeLifecycle | undefined;
+  if (heartbeatSettings) {
+    lifecycle = new SpokeLifecycle(makeLifecycleDispatch(spoke), heartbeatSettings, version);
+    lifecycle.start();
+  }
+
   const close = (): void => {
+    // If our in-tab hub IS the elected leader, the lifecycle manager lives in
+    // this same JS context. Calling bye() locally is synchronous, so callers
+    // see the spoke removed before close() returns. The async RPC bye is still
+    // sent (it's harmless and necessary when another tab is leader), but for
+    // the in-tab leader case the local call is what the test contract relies on.
+    if (lifecycle && inTabHub) {
+      const mgr = (inTabHub as unknown as { __lifecycle?: { bye(id: string): void } }).__lifecycle;
+      if (mgr) mgr.bye(lifecycle.spokeId);
+    }
+    lifecycle?.stop();
     spoke.close();
     inTabHub?.close();
   };
 
   const client = batchSettings.enabled
-    ? buildBatchingProxy(spoke, batchSettings, close)
-    : buildDirectProxy(spoke, close);
+    ? buildBatchingProxy(spoke, batchSettings, lifecycle, close)
+    : buildDirectProxy(spoke, lifecycle, close);
+
+  if (lifecycle) {
+    Object.defineProperty(client, '__lifecycle', {
+      value: lifecycle,
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
+  }
 
   return client as unknown as CreatedClient<S>;
 }
