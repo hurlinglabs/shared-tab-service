@@ -10,6 +10,7 @@ import {
   type BatchedEvent,
   resolveBatchSettings,
 } from './batch.js';
+import { LeaderChangedError, failPendingCalls } from './errors.js';
 import { registerWithBatching } from './hub.js';
 import {
   LIFECYCLE_NAMESPACE,
@@ -19,6 +20,50 @@ import {
   type HeartbeatSettings,
 } from './lifecycle.js';
 import type { SharedTabService } from './service.js';
+
+/**
+ * Manifest of `ns -> set of idempotent method names`, derived from the
+ * static services record. Only populated when `services` is provided as a
+ * record (not a function); async-resolved services skip retry entirely.
+ */
+type IdempotentManifest = Map<string, Set<string>>;
+
+const buildIdempotentManifest = (services: ServicesInput): IdempotentManifest => {
+  const out: IdempotentManifest = new Map();
+  if (typeof services === 'function') return out;
+  for (const [ns, svc] of Object.entries(services)) {
+    const list = (svc as { __idempotent?: ReadonlyArray<string> }).__idempotent;
+    if (Array.isArray(list) && list.length > 0) out.set(ns, new Set(list));
+  }
+  return out;
+};
+
+const isIdempotent = (m: IdempotentManifest, ns: string, method: string): boolean =>
+  m.get(ns)?.has(method) ?? false;
+
+/**
+ * Wait for the next `onLeaderChange` event, with a short fallback so we don't
+ * hang forever if the spoke never observes one (e.g. follower whose hub never
+ * gets elected). The retry is a best-effort — if a new leader exists by the
+ * time we re-issue, the call goes through; otherwise tab-election's own retry
+ * loop in Tab.call covers us.
+ */
+const waitForLeaderSettle = (spoke: Spoke, fallbackMs = 250): Promise<void> =>
+  new Promise((resolve) => {
+    let done = false;
+    const off = spoke.onLeaderChange(() => {
+      if (done) return;
+      done = true;
+      off();
+      resolve();
+    });
+    setTimeout(() => {
+      if (done) return;
+      done = true;
+      off();
+      resolve();
+    }, fallbackMs);
+  });
 
 export type ServicesRecord = { [K in string]: SharedTabService<K> };
 export type ServicesInput = ServicesRecord | (() => Promise<ServicesRecord>);
@@ -94,6 +139,7 @@ interface QueuedCall {
   args: unknown[];
   resolve: (value: unknown) => void;
   reject: (err: Error) => void;
+  retried?: boolean;
 }
 
 type BatchStub = ServiceStub<
@@ -124,6 +170,7 @@ function buildBatchingProxy(
   spoke: Spoke,
   settings: BatchSettings,
   lifecycle: SpokeLifecycle | undefined,
+  idempotent: IdempotentManifest,
   close: () => void,
 ): Record<string, unknown> {
   const batchStub = spoke.getService(BATCH_NAMESPACE) as BatchStub;
@@ -148,6 +195,21 @@ function buildBatchingProxy(
       }
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
+      // The whole batch lost its leader. Per-item idempotent calls retry once
+      // against the new leader; non-idempotent calls surface the error.
+      if (e instanceof LeaderChangedError) {
+        await waitForLeaderSettle(spoke);
+        for (const q of batch) {
+          if (isIdempotent(idempotent, q.ns, q.method) && !q.retried) {
+            q.retried = true;
+            queue.push(q);
+            scheduleFlush();
+          } else {
+            q.reject(e);
+          }
+        }
+        return;
+      }
       for (const q of batch) q.reject(e);
     }
   };
@@ -229,20 +291,38 @@ function buildBatchingProxy(
 function buildDirectProxy(
   spoke: Spoke,
   lifecycle: SpokeLifecycle | undefined,
+  idempotent: IdempotentManifest,
   close: () => void,
 ): Record<string, unknown> {
   const stubCache = new Map<string, unknown>();
+  const wrapMethodWithRetry =
+    (ns: string, method: string, fn: (...args: unknown[]) => Promise<unknown>) =>
+    async (...args: unknown[]): Promise<unknown> => {
+      try {
+        return await fn(...args);
+      } catch (err) {
+        if (err instanceof LeaderChangedError && isIdempotent(idempotent, ns, method)) {
+          await waitForLeaderSettle(spoke);
+          // Exactly one retry — any error from the retry (including a second
+          // LeaderChangedError) propagates.
+          return await fn(...args);
+        }
+        throw err;
+      }
+    };
   const getServiceProxy = (ns: string): unknown => {
     const cached = stubCache.get(ns);
     if (cached) return cached;
     const inner = spoke.getService(ns) as unknown as Record<string, unknown>;
-    if (!lifecycle) {
-      stubCache.set(ns, inner);
-      return inner;
-    }
     const wrapped = new Proxy(inner, {
       get(target, prop) {
         if (prop === 'on') {
+          if (!lifecycle) {
+            const v = Reflect.get(target, prop) as
+              | ((e: string, h: (p: unknown) => void) => () => void)
+              | undefined;
+            return typeof v === 'function' ? v.bind(target) : v;
+          }
           return (event: string, handler: (payload: unknown) => void): (() => void) => {
             const off = (
               target as unknown as {
@@ -260,7 +340,10 @@ function buildDirectProxy(
           };
         }
         const v = Reflect.get(target, prop);
-        return typeof v === 'function' ? v.bind(target) : v;
+        if (typeof v !== 'function') return v;
+        if (typeof prop !== 'string') return v.bind(target);
+        const bound = v.bind(target) as (...args: unknown[]) => Promise<unknown>;
+        return wrapMethodWithRetry(ns, prop, bound);
       },
     });
     stubCache.set(ns, wrapped);
@@ -345,6 +428,30 @@ export function createSharedTabService<const S extends ServicesInput>(
     });
   }
 
+  // Fast-fail: when the spoke observes a leader change, every entry in
+  // tab-election's pending-call map represents an RPC waiting on a leader
+  // that's gone. Drain them with LeaderChangedError instead of waiting out
+  // the 30s baseline timeout. See docs/spec/20260430-leader-change-fast-fail.md.
+  //
+  // We must NOT drain on this spoke's very first election win when no prior
+  // leader existed: the pending calls in `_callDeferreds` map to entries in
+  // `_queuedCalls` which `tab-election` is about to process locally. The
+  // Tab's `state` event fires only when *another* tab has broadcast leader
+  // state to us, so it's a reliable "a prior leader exists/existed" signal.
+  let everSawOtherLeader = false;
+  const tabEvents = (spoke as unknown as { tab: EventTarget & { _hasLeaderCache?: boolean } }).tab;
+  if (tabEvents) {
+    tabEvents.addEventListener('state', () => {
+      everSawOtherLeader = true;
+    });
+  }
+  spoke.onLeaderChange((isLeader) => {
+    if (isLeader && !everSawOtherLeader) return;
+    failPendingCalls(spoke, new LeaderChangedError());
+  });
+
+  const idempotentManifest = buildIdempotentManifest(services);
+
   let lifecycle: SpokeLifecycle | undefined;
   if (heartbeatSettings) {
     lifecycle = new SpokeLifecycle(makeLifecycleDispatch(spoke), heartbeatSettings, version);
@@ -367,8 +474,8 @@ export function createSharedTabService<const S extends ServicesInput>(
   };
 
   const client = batchSettings.enabled
-    ? buildBatchingProxy(spoke, batchSettings, lifecycle, close)
-    : buildDirectProxy(spoke, lifecycle, close);
+    ? buildBatchingProxy(spoke, batchSettings, lifecycle, idempotentManifest, close)
+    : buildDirectProxy(spoke, lifecycle, idempotentManifest, close);
 
   if (lifecycle) {
     Object.defineProperty(client, '__lifecycle', {

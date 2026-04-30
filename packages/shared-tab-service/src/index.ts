@@ -1,4 +1,5 @@
 export { defineService, type SharedTabService } from './service.js';
+export { LeaderChangedError } from './errors.js';
 export {
   createSharedTabService,
   type CreateSharedTabServiceOptions,
